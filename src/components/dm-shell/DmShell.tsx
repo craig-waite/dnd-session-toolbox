@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Swords } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '#/components/ui/button'
+import { rollInitiative } from '#/lib/combat/initiative'
 import { DmShellNavigationProvider } from '#/lib/dm-shell/navigation-context'
 import {
   resourceByActivity,
@@ -9,11 +10,15 @@ import {
   tableResourceByActivity,
   tableResourceByKind,
 } from '#/lib/dm-shell/resources'
-import { activities, combatants } from '#/lib/mock-dm-shell-data'
-import type { ActivityId, TabItem } from '#/types/dm-shell'
+import {
+  activities,
+  combatants as initialCombatants,
+} from '#/lib/mock-dm-shell-data'
+import type { ActivityId, Combatant, TabItem } from '#/types/dm-shell'
 import type { SearchResult } from '#/types/search'
+import type { SrdMonster } from '#/types/srd'
 import { ActivityBar } from './ActivityBar'
-import { CombatTrackerDrawer } from './CombatTrackerDrawer'
+import { CombatPanel } from './CombatPanel'
 import { GlobalSearch } from './GlobalSearch'
 import { PlayerViewPanel } from './PlayerViewPanel'
 import { SidePanel } from './SidePanel'
@@ -28,7 +33,105 @@ export function DmShell() {
     'monster:goblin',
   )
   const [isCombatMode, setIsCombatMode] = useState(false)
-  const [isCombatOpen, setIsCombatOpen] = useState(true)
+  const [round, setRound] = useState(1)
+  const [combatants, setCombatants] = useState<Combatant[]>(initialCombatants)
+  const [activeCombatantId, setActiveCombatantId] = useState<string | null>(
+    initialCombatants.find((c) => c.initiative != null)?.id ?? null,
+  )
+
+  const initiativeOrder = [...combatants].sort(
+    (a, b) => (b.initiative ?? -1) - (a.initiative ?? -1),
+  )
+
+  function applyHp(id: string, delta: number) {
+    setCombatants((current) =>
+      current.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              currentHp: Math.max(0, Math.min(c.maxHp, c.currentHp + delta)),
+            }
+          : c,
+      ),
+    )
+  }
+
+  function addCondition(id: string, name: string) {
+    setCombatants((current) =>
+      current.map((c) =>
+        c.id === id && !c.conditions.some((cond) => cond.name === name)
+          ? { ...c, conditions: [...c.conditions, { name }] }
+          : c,
+      ),
+    )
+  }
+
+  function removeCondition(id: string, name: string) {
+    setCombatants((current) =>
+      current.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              conditions: c.conditions.filter((cond) => cond.name !== name),
+            }
+          : c,
+      ),
+    )
+  }
+
+  function nextTurn() {
+    const currentIndex = initiativeOrder.findIndex(
+      (c) => c.id === activeCombatantId,
+    )
+    const nextIndex = (currentIndex + 1) % initiativeOrder.length
+    if (nextIndex === 0) setRound((r) => r + 1)
+    setActiveCombatantId(initiativeOrder[nextIndex]?.id ?? null)
+  }
+
+  function addCombatant() {
+    const id = `combatant-${combatants.length + 1}`
+    setCombatants((current) => [
+      ...current,
+      {
+        id,
+        kind: 'monster',
+        name: 'New combatant',
+        initiative: 0,
+        currentHp: 1,
+        maxHp: 1,
+        tempHp: 0,
+        conditions: [],
+        resources: [],
+        hasActedThisRound: false,
+      },
+    ])
+  }
+
+  function addMonsterToCombat(monster: SrdMonster) {
+    const existingCount = combatants.filter(
+      (c) => c.sourceIndex === monster.index,
+    ).length
+    const roll = rollInitiative(monster)
+    const newCombatant: Combatant = {
+      id: `${monster.index}-${existingCount + 1}-${Date.now()}`,
+      kind: 'monster',
+      sourceIndex: monster.index,
+      name:
+        existingCount > 0
+          ? `${monster.name} ${existingCount + 1}`
+          : monster.name,
+      initiative: roll.total,
+      initiativeDetail: roll.detail,
+      currentHp: monster.hit_points,
+      maxHp: monster.hit_points,
+      tempHp: 0,
+      conditions: [],
+      resources: [],
+      hasActedThisRound: false,
+    }
+    setCombatants((current) => [...current, newCombatant])
+    setIsCombatMode(true)
+  }
 
   const panel = resourceByActivity.get(activeActivity)
   const panelQuery = useQuery({
@@ -124,7 +227,7 @@ export function DmShell() {
   }
 
   return (
-    <DmShellNavigationProvider value={{ openResource }}>
+    <DmShellNavigationProvider value={{ openResource, addMonsterToCombat }}>
       <div className="flex h-screen flex-col bg-background text-foreground">
         <header className="flex items-center gap-2.5 border-b bg-card px-3 py-2">
           <span className="text-[13px] font-medium">DM session toolbox</span>
@@ -136,10 +239,7 @@ export function DmShell() {
             variant={isCombatMode ? 'secondary' : 'ghost'}
             size="sm"
             aria-pressed={isCombatMode}
-            onClick={() => {
-              setIsCombatMode((mode) => !mode)
-              setIsCombatOpen(true)
-            }}
+            onClick={() => setIsCombatMode((mode) => !mode)}
             className={`gap-1.5 text-xs ${
               isCombatMode ? 'text-primary' : 'text-muted-foreground'
             }`}
@@ -194,16 +294,21 @@ export function DmShell() {
           </div>
 
           <PlayerViewPanel />
-        </div>
 
-        {isCombatMode && (
-          <CombatTrackerDrawer
-            combatants={combatants}
-            round={3}
-            isOpen={isCombatOpen}
-            onToggle={() => setIsCombatOpen((open) => !open)}
-          />
-        )}
+          {isCombatMode && (
+            <CombatPanel
+              round={round}
+              combatants={combatants}
+              activeCombatantId={activeCombatantId}
+              onSelectCombatant={setActiveCombatantId}
+              onApplyHp={applyHp}
+              onAddCondition={addCondition}
+              onRemoveCondition={removeCondition}
+              onNextTurn={nextTurn}
+              onAddCombatant={addCombatant}
+            />
+          )}
+        </div>
       </div>
     </DmShellNavigationProvider>
   )

@@ -15,7 +15,8 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "db:ping": "tsx scripts/db-ping.ts",
-    "db:seed-srd": "tsx scripts/fetch-srd-data.ts && tsx scripts/seed-srd.ts"
+    "db:seed-srd": "tsx scripts/fetch-srd-data.ts && tsx scripts/seed-srd.ts",
+    "db:seed-monster-manual": "tsx scripts/seed-monster-manual.ts"
   },
   "dependencies": {
     "@clerk/tanstack-react-start": "^1.4.7",

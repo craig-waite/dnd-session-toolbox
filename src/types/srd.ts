@@ -17,9 +17,22 @@ export interface SrdMonster {
   intelligence: number
   wisdom: number
   charisma: number
+  senses?: Record<string, string | number>
+  languages?: string
   challenge_rating: number
+  proficiency_bonus?: number
+  proficiencies?: Array<{
+    value: number
+    proficiency: { index: string; name: string }
+  }>
+  damage_resistances?: string[]
+  damage_immunities?: string[]
+  damage_vulnerabilities?: string[]
+  condition_immunities?: Array<{ index: string; name: string }>
   special_abilities?: Array<{ name: string; desc: string }>
   actions?: Array<{ name: string; desc: string }>
+  legendary_actions?: Array<{ name: string; desc: string }>
+  reactions?: Array<{ name: string; desc: string }>
 }
 
 export interface SrdSpell {

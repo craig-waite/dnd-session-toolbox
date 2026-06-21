@@ -15,7 +15,8 @@ test-results
 playwright-report
 blob-report
 playwright/.cache
-src/data/srd/**/*.json
+src/data/srd/**
+src/data/official_paid_content/**
 
 # clerk configuration (can include secrets)
 /.clerk/

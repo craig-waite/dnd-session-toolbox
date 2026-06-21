@@ -75,18 +75,20 @@ import weaponPropertiesJson from '../src/data/srd/2014/5e-SRD-Weapon-Properties.
   type: 'json',
 }
 import { getDb } from '../src/lib/db/mongo.server'
-
-export const SRD_SOURCE = 'srd-5.1-2014'
+import { MONSTER_MANUAL_SOURCE, SRD_SOURCE } from './monster-sources'
 
 async function seedCollection(
   collectionName: string,
   items: Array<Record<string, unknown>>,
+  options: { skipIndices?: Set<string> } = {},
 ) {
   const db = await getDb()
   const collection = db.collection(collectionName)
 
   await collection.deleteMany({ source: SRD_SOURCE })
-  const docs = items.map((item) => ({ ...item, source: SRD_SOURCE }))
+  const docs = items
+    .filter((item) => !options.skipIndices?.has(item.index as string))
+    .map((item) => ({ ...item, source: SRD_SOURCE }))
   if (docs.length > 0) {
     await collection.insertMany(docs)
   }
@@ -201,9 +203,25 @@ function buildRacesCollection() {
 }
 
 async function main() {
+  const db = await getDb()
+  const monsterManualDocs = await db
+    .collection('monsters')
+    .find(
+      { source: MONSTER_MANUAL_SOURCE },
+      { projection: { _id: 0, index: 1 } },
+    )
+    .toArray()
+  const monsterManualIndices = new Set(
+    monsterManualDocs.map((doc) => doc.index),
+  )
+
+  // Monster Manual entries (seeded separately, see scripts/seed-monster-manual.ts)
+  // are more comprehensive than the SRD for the same creature, so a re-run of
+  // this script must not overwrite them back with the thinner SRD version.
   await seedCollection(
     'monsters',
     monstersJson as Array<Record<string, unknown>>,
+    { skipIndices: monsterManualIndices },
   )
   await seedCollection('spells', spellsJson as Array<Record<string, unknown>>)
   await seedCollection(
