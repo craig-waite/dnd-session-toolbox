@@ -1,3 +1,4 @@
+import { abilityModifier } from '#/lib/utils'
 import type { SrdMonster } from '#/types/srd'
 
 export type InitiativeModifierSource =
@@ -9,10 +10,6 @@ export type InitiativeModifierSource =
 export interface InitiativeModifier {
   value: number
   source: InitiativeModifierSource
-}
-
-function abilityModifier(score: number): number {
-  return Math.floor((score - 10) / 2)
 }
 
 /**

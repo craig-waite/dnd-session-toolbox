@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Swords } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '#/components/ui/button'
+import { applyHpDelta } from '#/lib/combat/hp'
 import { rollInitiative } from '#/lib/combat/initiative'
 import { DmShellNavigationProvider } from '#/lib/dm-shell/navigation-context'
 import {
@@ -47,10 +48,7 @@ export function DmShell() {
     setCombatants((current) =>
       current.map((c) =>
         c.id === id
-          ? {
-              ...c,
-              currentHp: Math.max(0, Math.min(c.maxHp, c.currentHp + delta)),
-            }
+          ? { ...c, currentHp: applyHpDelta(c.currentHp, c.maxHp, delta) }
           : c,
       ),
     )
@@ -89,11 +87,10 @@ export function DmShell() {
   }
 
   function addCombatant() {
-    const id = `combatant-${combatants.length + 1}`
     setCombatants((current) => [
       ...current,
       {
-        id,
+        id: crypto.randomUUID(),
         kind: 'monster',
         name: 'New combatant',
         initiative: 0,
@@ -113,7 +110,7 @@ export function DmShell() {
     ).length
     const roll = rollInitiative(monster)
     const newCombatant: Combatant = {
-      id: `${monster.index}-${existingCount + 1}-${Date.now()}`,
+      id: crypto.randomUUID(),
       kind: 'monster',
       sourceIndex: monster.index,
       name:

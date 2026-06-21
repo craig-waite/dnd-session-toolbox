@@ -13,3 +13,7 @@ export function slugify(value: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
 }
+
+export function abilityModifier(score: number): number {
+  return Math.floor((score - 10) / 2)
+}

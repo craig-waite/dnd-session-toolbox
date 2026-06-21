@@ -3,15 +3,11 @@ import { ResourceLinkList } from '#/components/dm-shell/ResourceLink'
 import { StatCard } from '#/components/dm-shell/StatCard'
 import { Button } from '#/components/ui/button'
 import { useDmShellNavigation } from '#/lib/dm-shell/navigation-context'
-import { slugify } from '#/lib/utils'
+import { abilityModifier, slugify } from '#/lib/utils'
 import type { SrdMonster } from '#/types/srd'
 
 function toLinkItems(names: string[]) {
   return names.map((name) => ({ index: slugify(name), name }))
-}
-
-function abilityModifier(score: number): number {
-  return Math.floor((score - 10) / 2)
 }
 
 function AbilityScoreValue({ score }: { score: number }) {
@@ -64,7 +60,10 @@ function NarrativeSection({
     <div className="mb-3">
       <SectionHeading>{heading}</SectionHeading>
       {entries.map((entry) => (
-        <p key={entry.name} className="mb-1 text-xs text-muted-foreground">
+        <p
+          key={`${entry.name}:${entry.desc}`}
+          className="mb-1 text-xs text-muted-foreground"
+        >
           <span className="font-medium text-foreground">{entry.name}.</span>{' '}
           {entry.desc}
         </p>

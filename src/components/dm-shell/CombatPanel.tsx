@@ -15,18 +15,16 @@ function CombatantName({
 }) {
   const { openResource } = useDmShellNavigation()
   const textSize = size === 'md' ? 'text-[13px]' : 'text-xs'
+  const { sourceIndex } = combatant
 
-  if (!combatant.sourceIndex) {
+  if (!sourceIndex) {
     return <span className={`${textSize} font-medium`}>{combatant.name}</span>
   }
 
   return (
     <button
       type="button"
-      onClick={(e) => {
-        e.stopPropagation()
-        openResource('monster', combatant.sourceIndex as string, combatant.name)
-      }}
+      onClick={() => openResource('monster', sourceIndex, combatant.name)}
       className={`${textSize} font-medium underline-offset-2 hover:underline`}
     >
       {combatant.name}

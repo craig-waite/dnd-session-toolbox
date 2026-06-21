@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { readFileSync } from 'node:fs'
 import { getDb } from '../src/lib/db/mongo.server'
-import { slugify } from '../src/lib/utils'
+import { abilityModifier, slugify } from '../src/lib/utils'
 import { MONSTER_MANUAL_SOURCE } from './monster-sources'
 
 const MONSTER_MANUAL_PATH = new URL(
@@ -143,10 +143,6 @@ function buildProficiencies(monster: ImprovedInitiativeMonster) {
   return [...saves, ...skills]
 }
 
-function abilityModifier(score: number): number {
-  return Math.floor((score - 10) / 2)
-}
-
 function mapMonster(monster: ImprovedInitiativeMonster) {
   const { size, type, alignment } = parseTypeString(monster.Type)
   const challengeRating = parseChallengeRating(monster.Challenge)
@@ -252,8 +248,16 @@ async function main() {
     docsToUpsert.push(doc)
   }
 
-  for (const doc of docsToUpsert) {
-    await collection.replaceOne({ index: doc.index }, doc, { upsert: true })
+  if (docsToUpsert.length > 0) {
+    await collection.bulkWrite(
+      docsToUpsert.map((doc) => ({
+        replaceOne: {
+          filter: { index: doc.index },
+          replacement: doc,
+          upsert: true,
+        },
+      })),
+    )
   }
   await collection.createIndex({ index: 1 }, { unique: true })
   await collection.createIndex({ name: 1 })
