@@ -1,8 +1,10 @@
 import { createContext, type ReactNode, useContext } from 'react'
 import type { TabKind } from '#/types/dm-shell'
+import type { SrdMonster } from '#/types/srd'
 
 export interface DmShellNavigation {
   openResource: (kind: TabKind, index: string, label: string) => void
+  addMonsterToCombat: (monster: SrdMonster) => void
 }
 
 const DmShellNavigationContext = createContext<DmShellNavigation | null>(null)
