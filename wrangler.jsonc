@@ -9,5 +9,10 @@
   },
   "observability": {
     "enabled": true
+  },
+  "env": {
+    "preview": {
+      "name": "dnd-session-toolbox-preview"
+    }
   }
 }
