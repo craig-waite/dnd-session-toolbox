@@ -22,3 +22,7 @@ src/data/official_paid_content/**
 /.clerk/
 
 /scratch/**/*
+
+.dev.vars*
+!.dev.vars.example
+!.env.example
