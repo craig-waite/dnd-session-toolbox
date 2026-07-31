@@ -10,13 +10,16 @@
     "generate-routes": "tsr generate",
     "build": "vite build",
     "preview": "vite preview",
+    "deploy": "vite build && wrangler deploy",
+    "cf-typegen": "wrangler types",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "db:ping": "tsx scripts/db-ping.ts",
     "db:seed-srd": "tsx scripts/fetch-srd-data.ts && tsx scripts/seed-srd.ts",
-    "db:seed-monster-manual": "tsx scripts/seed-monster-manual.ts"
+    "db:seed-monster-manual": "tsx scripts/seed-monster-manual.ts",
+    "db:seed-characters": "tsx scripts/seed-characters.ts"
   },
   "dependencies": {
     "@clerk/tanstack-react-start": "^1.4.7",
@@ -45,6 +48,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.0",
     "@clerk/testing": "^2.1.5",
+    "@cloudflare/vite-plugin": "^1.42.1",
     "@playwright/test": "^1.61.0",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-vite": "latest",
@@ -62,7 +66,8 @@
     "tsx": "^4.22.4",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.5",
+    "wrangler": "^4.103.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
