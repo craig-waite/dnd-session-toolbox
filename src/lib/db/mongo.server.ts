@@ -12,20 +12,18 @@ function createClientPromise(): Promise<MongoClient> {
   return new MongoClient(uri).connect()
 }
 
-// Reuse the client across Vite HMR reloads in dev so we don't leak connections.
-let clientPromise: Promise<MongoClient>
-if (process.env.NODE_ENV === 'production') {
-  clientPromise = createClientPromise()
-} else {
-  globalThis._mongoClientPromise ??= createClientPromise()
-  clientPromise = globalThis._mongoClientPromise
-}
-
+// Lazily create the client on first use and cache it on `globalThis` so it's
+// reused across requests within the same isolate (and across Vite HMR reloads
+// in dev). This must NOT run eagerly at module load: Cloudflare Workers
+// disallow asynchronous I/O (like opening the MongoDB socket) outside of a
+// request handler — doing it at module scope throws "Disallowed operation
+// called within global scope" on every request in production.
 export async function getDb(): Promise<Db> {
   const dbName = process.env.MONGODB_DB
   if (!dbName) {
     throw new Error('Missing MONGODB_DB environment variable')
   }
-  const client = await clientPromise
+  globalThis._mongoClientPromise ??= createClientPromise()
+  const client = await globalThis._mongoClientPromise
   return client.db(dbName)
 }
